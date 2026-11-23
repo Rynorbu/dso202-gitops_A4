@@ -27,8 +27,10 @@ frontend:
 backend:
   replicaCount: 1
   image:
-    tag: "1.0"
+    tag: "1.1"
   corsOrigin: "http://localhost:30080"
+  extraEnv:
+    TASK_PAGE_SIZE: "50"      # required by backend 1.1 (named in its crash log)
 
 database:
   image:
