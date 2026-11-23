@@ -1,0 +1,23 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/backend-service.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2
+# Purpose     : ClusterIP Service for the API (DNS name tasktracker-backend).
+#               Used by the frontend and by the PostSync smoke test.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tasktracker.backendHost" . }}
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "tasktracker.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: {{ .Values.backend.port }}
+      targetPort: http

@@ -1,0 +1,75 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/backend-deployment.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.3
+# Purpose     : Node.js / Express API tier. Sync wave "1" (C5): created after
+#               the database. progressDeadlineSeconds 120 (C6) so a broken
+#               release is reported Degraded after 2 minutes, not 10.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasktracker.fullname" . }}-backend
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"        # C5
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  progressDeadlineSeconds: 120               # C6
+  selector:
+    matchLabels:
+      {{- include "tasktracker.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "tasktracker.labels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "tasktracker.fullname" . }}
+      containers:
+        - name: backend
+          # C1: the tag comes only from values.
+          image: "{{ .Values.backend.image.repository }}:{{ required "backend.image.tag must be set" .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "tasktracker.fullname" . }}-config
+          env:
+            # C3: credentials from the existing Secret (created from a SealedSecret).
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tasktracker.secretName" . }}
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tasktracker.secretName" . }}
+                  key: DB_PASSWORD
+            # C2: extra settings from values (backend.extraEnv) - a new
+            # variable needs only a values change, never a template change.
+            {{- range $name, $value := .Values.backend.extraEnv }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          readinessProbe:                     # C4: GET /api/status
+            httpGet:
+              path: /api/status
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:                          # C7
+            {{- toYaml .Values.backend.resources | nindent 12 }}

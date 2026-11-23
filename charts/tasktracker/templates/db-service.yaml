@@ -1,0 +1,23 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/db-service.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2
+# Purpose     : Headless Service for the database StatefulSet (stable DNS name
+#               tasktracker-db). Only reachable inside the cluster.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tasktracker.dbHost" . }}
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  clusterIP: None
+  selector:
+    {{- include "tasktracker.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+  ports:
+    - name: postgres
+      port: {{ .Values.database.port }}
+      targetPort: postgres

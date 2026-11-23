@@ -1,0 +1,35 @@
+# =============================================================================
+# File        : environments/dev/values.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.2
+# Purpose     : Values for the DEV environment (namespace dso202-dev).
+#               Contains ONLY the differences from charts/tasktracker/values.yaml.
+#               Read by Application tasktracker-dev from branch main, so every
+#               merge to main reaches dev automatically.
+# =============================================================================
+
+global:
+  environment: dev
+
+# C3: Secret created by the Sealed Secrets controller from
+# platform/dev/tasktracker-credentials.sealed.yaml
+existingSecret: tasktracker-credentials
+
+frontend:
+  replicaCount: 1
+  image:
+    tag: "1.0"
+  service:
+    type: NodePort
+    nodePort: 30080          # C10: mapped by kind -> http://localhost:30080
+  backendUrl: "http://localhost:30080"   # browser calls the frontend; nginx proxies /api/
+
+backend:
+  replicaCount: 1
+  image:
+    tag: "1.0"
+  corsOrigin: "http://localhost:30080"
+
+database:
+  image:
+    tag: "1.0"

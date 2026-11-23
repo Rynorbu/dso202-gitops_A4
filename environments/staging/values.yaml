@@ -1,0 +1,36 @@
+# =============================================================================
+# File        : environments/staging/values.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.2
+# Purpose     : Values for the STAGING environment (namespace dso202-staging).
+#               Contains ONLY the differences from charts/tasktracker/values.yaml.
+#               Read by Application tasktracker-staging from a Git TAG, so a
+#               change here reaches staging only after a new tag is promoted
+#               and a person runs a manual sync.
+# =============================================================================
+
+global:
+  environment: staging
+
+# C3: Secret created by the Sealed Secrets controller from
+# platform/staging/tasktracker-credentials.sealed.yaml (sealed separately)
+existingSecret: tasktracker-credentials
+
+frontend:
+  replicaCount: 1
+  image:
+    tag: "1.0"
+  service:
+    type: NodePort
+    nodePort: 30081          # C10: not mapped by kind -> use kubectl port-forward 8081
+  backendUrl: "http://localhost:8081"    # browser calls the frontend; nginx proxies /api/
+
+backend:
+  replicaCount: 1
+  image:
+    tag: "1.0"
+  corsOrigin: "http://localhost:8081"
+
+database:
+  image:
+    tag: "1.0"

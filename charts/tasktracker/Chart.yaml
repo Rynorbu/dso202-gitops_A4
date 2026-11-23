@@ -1,0 +1,24 @@
+# =============================================================================
+# File        : charts/tasktracker/Chart.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2 (Helm chart, reused from Assignment 3)
+# Purpose     : Chart metadata. The chart comes from Assignment 3 and was
+#               adjusted in Task 1 to meet the chart contract C1-C11 (see
+#               README.md). Argo CD renders it with `helm template`; it is
+#               never installed with `helm install`.
+# =============================================================================
+apiVersion: v2
+name: tasktracker
+description: Three-tier Task Tracker (nginx frontend, Node.js backend, PostgreSQL) delivered by Argo CD
+type: application
+# Chart version: bumped from 0.1.0 (A3) because the contract changes are breaking.
+version: 0.2.0
+# appVersion is informational only (label). Image tags always come from values (C1).
+appVersion: "1.0"
+kubeVersion: ">=1.30.0-0"
+keywords:
+  - dso202
+  - three-tier
+  - gitops
+maintainers:
+  - name: Rynorbu

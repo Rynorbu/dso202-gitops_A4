@@ -1,0 +1,17 @@
+# =============================================================================
+# File        : charts/tasktracker/.helmignore
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2
+# Purpose     : Files Helm skips when it renders or packages the chart.
+# =============================================================================
+.DS_Store
+.git/
+.gitignore
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.vscode/
+.idea/
+*.tgz

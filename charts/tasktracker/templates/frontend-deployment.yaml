@@ -1,0 +1,74 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/frontend-deployment.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.3
+# Purpose     : nginx web frontend. Sync wave "2" (C5): created last, after
+#               the backend is Healthy. progressDeadlineSeconds 120 (C6).
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasktracker.fullname" . }}-frontend
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"        # C5
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  progressDeadlineSeconds: 120               # C6
+  selector:
+    matchLabels:
+      {{- include "tasktracker.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "tasktracker.labels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/nginx: {{ include (print $.Template.BasePath "/frontend-nginx-configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "tasktracker.fullname" . }}
+      containers:
+        - name: frontend
+          # C1: the tag comes only from values.
+          image: "{{ .Values.frontend.image.repository }}:{{ required "frontend.image.tag must be set" .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "tasktracker.fullname" . }}-config
+                  key: BACKEND_URL
+          readinessProbe:                     # C4
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:                          # C7
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          {{- if .Values.frontend.apiProxy.enabled }}
+          volumeMounts:
+            # Replace only nginx.conf; the rest of /etc/nginx stays as in the image.
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+          {{- end }}
+      {{- if .Values.frontend.apiProxy.enabled }}
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: {{ include "tasktracker.fullname" . }}-frontend-nginx
+      {{- end }}

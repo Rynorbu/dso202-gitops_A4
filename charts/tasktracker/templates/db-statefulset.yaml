@@ -1,0 +1,90 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/db-statefulset.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.3
+# Purpose     : PostgreSQL database tier. Changed from the A3 Deployment + PVC
+#               to a StatefulSet with volumeClaimTemplates (as in A2), so the
+#               chart renders no PersistentVolumeClaim and matches the dso202
+#               AppProject whitelist exactly. Sync wave "0" (C5): created first.
+#               Note: PVCs created from volumeClaimTemplates are not tracked by
+#               Argo CD and remain when the StatefulSet is deleted.
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "tasktracker.fullname" . }}-db
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"        # C5: database first
+spec:
+  serviceName: {{ include "tasktracker.dbHost" . }}
+  replicas: 1
+  # RollingUpdate, not OnDelete: with OnDelete Argo CD would report the app as
+  # Progressing forever after an update.
+  updateStrategy:
+    type: RollingUpdate
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      {{- include "tasktracker.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        {{- include "tasktracker.labels" . | nindent 8 }}
+        app.kubernetes.io/component: database
+      annotations:
+        # Restart the Pod when the rendered ConfigMap changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "tasktracker.fullname" . }}
+      containers:
+        - name: db
+          # C1: the tag comes only from values; no default in the template.
+          image: "{{ .Values.database.image.repository }}:{{ required "database.image.tag must be set" .Values.database.image.tag }}"
+          imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.database.port }}
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "tasktracker.fullname" . }}-config
+                  key: POSTGRES_DB
+            # C3: credentials from the existing Secret (created from a SealedSecret).
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tasktracker.secretName" . }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tasktracker.secretName" . }}
+                  key: POSTGRES_PASSWORD
+          readinessProbe:                       # C4
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:                            # C7
+            {{- toYaml .Values.database.resources | nindent 12 }}
+          volumeMounts:
+            - name: db-storage
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: db-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.database.persistence.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.database.persistence.size }}

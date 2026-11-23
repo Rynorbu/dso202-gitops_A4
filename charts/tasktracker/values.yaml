@@ -1,0 +1,73 @@
+# =============================================================================
+# File        : charts/tasktracker/values.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2, 4.3.2
+# Purpose     : Chart DEFAULTS only. Everything that differs per environment
+#               lives in environments/<env>/values.yaml (design rule 7.1:
+#               environments differ only by values and targetRevision).
+#               Image tags and the Secret name have no default on purpose -
+#               the templates fail with a clear message if they are missing.
+# =============================================================================
+
+global:
+  environment: ""            # dev | staging - required, set per environment
+
+nameOverride: ""
+# Fixed base name, so Service names are predictable in every environment:
+# tasktracker-db, tasktracker-backend, tasktracker-frontend.
+fullnameOverride: tasktracker
+
+# C3: the chart never renders a Secret. Pods read this existing Secret, which is
+# created in the namespace by the Sealed Secrets controller from
+# platform/<env>/tasktracker-credentials.sealed.yaml.
+# Required keys: DB_USER, DB_PASSWORD, POSTGRES_USER, POSTGRES_PASSWORD.
+existingSecret: ""
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: rynorbu11/dso202-frontend
+    tag: ""                  # C1: required, set in environments/<env>/values.yaml
+    pullPolicy: IfNotPresent # never Always (images may be kind-loaded)
+  service:
+    type: ClusterIP          # C10: NodePort in both environments
+    port: 8080
+    nodePort: null           # C10: 30080 dev, 30081 staging
+  # The URL the BROWSER uses for API calls, written into config.js at start-up.
+  # Set to the frontend's own address; nginx forwards /api/ to the backend
+  # Service, so no hosts-file entry or backend port-forward is needed.
+  backendUrl: ""             # required, set in environments/<env>/values.yaml
+  apiProxy:
+    enabled: true            # mount templates/frontend-nginx-configmap.yaml
+  resources:                 # C7: requests and limits on every container
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 150m, memory: 128Mi}
+
+backend:
+  replicaCount: 1
+  image:
+    repository: rynorbu11/dso202-backend
+    tag: ""                  # C1: required
+    pullPolicy: IfNotPresent
+  port: 8080
+  corsOrigin: "*"
+  # C2: extra environment variables for the backend container. A new setting
+  # required by a new image is added here in a values file - no template change.
+  extraEnv: {}
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+
+database:
+  image:
+    repository: rynorbu11/dso202-db
+    tag: ""                  # C1: required
+    pullPolicy: IfNotPresent
+  port: 5432
+  name: tasksdb
+  persistence:
+    size: 1Gi
+    storageClassName: ""     # empty -> cluster default StorageClass
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 250m, memory: 256Mi}

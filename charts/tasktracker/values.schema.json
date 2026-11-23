@@ -1,0 +1,85 @@
+{
+  "$comment": "File: charts/tasktracker/values.schema.json | Assignment: DSO202 Assignment 4 | Descriptor: 3.2 | Purpose: validates values before rendering, so a typo in an environment file fails helm lint / Argo CD instead of producing a broken release. JSON cannot hold comments, so this header is a $comment key.",
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["global", "existingSecret", "frontend", "backend", "database"],
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "environment": { "type": "string", "enum": ["", "dev", "staging"] }
+      }
+    },
+    "existingSecret": { "type": "string" },
+    "frontend": {
+      "type": "object",
+      "properties": {
+        "replicaCount": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "image": {
+          "type": "object",
+          "properties": {
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["IfNotPresent", "Never"] }
+          }
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["ClusterIP", "NodePort"] },
+            "port": { "type": "integer" },
+            "nodePort": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "integer", "minimum": 30000, "maximum": 32767 }
+              ]
+            }
+          }
+        },
+        "backendUrl": { "type": "string" },
+        "apiProxy": {
+          "type": "object",
+          "properties": { "enabled": { "type": "boolean" } }
+        }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "properties": {
+        "replicaCount": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "image": {
+          "type": "object",
+          "properties": {
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["IfNotPresent", "Never"] }
+          }
+        },
+        "port": { "type": "integer" },
+        "corsOrigin": { "type": "string" },
+        "extraEnv": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean"] }
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "object",
+          "properties": {
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["IfNotPresent", "Never"] }
+          }
+        },
+        "port": { "type": "integer" },
+        "name": { "type": "string", "minLength": 1 },
+        "persistence": {
+          "type": "object",
+          "properties": {
+            "size": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" }
+          }
+        }
+      }
+    }
+  }
+}

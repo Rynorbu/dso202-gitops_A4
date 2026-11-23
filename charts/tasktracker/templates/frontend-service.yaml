@@ -1,0 +1,28 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/frontend-service.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2
+# Purpose     : Frontend Service. Type and nodePort come from values (C10):
+#               NodePort 30080 in dev (mapped by kind to localhost:30080),
+#               NodePort 30081 in staging (not mapped -> port-forward).
+#               C9: no Ingress template exists; no ingress controller is used.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tasktracker.frontendHost" . }}
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.frontend.service.type }}
+  selector:
+    {{- include "tasktracker.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http
+      {{- if and (eq .Values.frontend.service.type "NodePort") .Values.frontend.service.nodePort }}
+      nodePort: {{ .Values.frontend.service.nodePort }}
+      {{- end }}

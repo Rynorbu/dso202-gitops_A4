@@ -1,0 +1,23 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/configmap.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 3.2
+# Purpose     : Non-secret configuration for all tiers, rendered from values
+#               (C2). Host names come from the helpers so they always match
+#               the Service names.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tasktracker.fullname" . }}-config
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+data:
+  DB_HOST: {{ include "tasktracker.dbHost" . | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+  APP_PORT: {{ .Values.backend.port | quote }}
+  CORS_ORIGIN: {{ .Values.backend.corsOrigin | quote }}
+  # The URL the BROWSER calls (the frontend's own address; nginx proxies /api/).
+  BACKEND_URL: {{ required "frontend.backendUrl must be set (the frontend's own browser URL)" .Values.frontend.backendUrl | quote }}
+  POSTGRES_DB: {{ .Values.database.name | quote }}
