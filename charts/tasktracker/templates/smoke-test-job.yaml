@@ -1,0 +1,66 @@
+# =============================================================================
+# File        : charts/tasktracker/templates/smoke-test-job.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.3.3 (Listing 13)
+# Purpose     : PostSync hook. Runs once after every successful sync, when all
+#               waves are Healthy, and calls the backend API through its
+#               Service. If it fails, the sync is marked failed.
+#               The backend Service name comes from the helper
+#               (tasktracker-backend), so it always matches backend-service.yaml.
+#               BeforeHookCreation: the old Job is deleted before a new one is
+#               created, so the latest result stays visible for kubectl logs.
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-smoke-test
+  labels:
+    {{- include "tasktracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smoke-test
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      labels:
+        {{- include "tasktracker.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: smoke-test
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534       # "nobody"
+        runAsGroup: 65534
+      containers:
+        - name: smoke-test
+          image: busybox:1.37
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:           # C7: quota rejects Pods without requests/limits
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              URL="http://{{ include "tasktracker.backendHost" . }}:{{ .Values.backend.port }}/api/tasks"
+              echo "smoke test: GET $URL"
+              for i in 1 2 3 4 5 6 7 8 9 10; do
+                if wget -q -T 3 -O - "$URL"; then
+                  echo ""
+                  echo "smoke test passed on attempt $i"
+                  exit 0
+                fi
+                echo "attempt $i failed"
+                sleep 3
+              done
+              echo "smoke test FAILED after 10 attempts"
+              exit 1
