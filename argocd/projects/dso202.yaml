@@ -1,0 +1,53 @@
+# =============================================================================
+# File        : argocd/projects/dso202.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.4.1 (Listing 8)
+# Purpose     : AppProject "dso202" - the WORKLOAD layer, least privilege.
+#               Used only by tasktracker-dev and tasktracker-staging.
+#               - only this repo as a source
+#               - only dso202-dev and dso202-staging as destinations
+#                 (never argocd, so a chart commit cannot touch Argo CD itself)
+#               - no cluster-scoped kinds at all
+#               - only the namespaced kinds the chart renders (checked against
+#                 `helm template ... | grep '^kind:' | sort | uniq -c`)
+#               Created by the root Application (wave -3: before any app uses it).
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dso202
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  description: Task Tracker workloads for the dev and staging environments
+
+  sourceRepos:
+    - https://github.com/Rynorbu/dso202-gitops_A4.git
+
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: dso202-dev
+    - server: https://kubernetes.default.svc
+      namespace: dso202-staging
+
+  # No cluster-scoped objects (Namespace, ClusterRole, CRD ...).
+  clusterResourceWhitelist: []
+
+  # Exactly the kinds rendered by charts/tasktracker.
+  # Deliberately ABSENT: Namespace, ResourceQuota, LimitRange, Role,
+  # RoleBinding, SealedSecret - those belong to the platform layer, so the
+  # workload chart can never change its own budget, permissions or credentials.
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment         # backend, frontend
+    - group: apps
+      kind: StatefulSet        # database
+    - group: ""
+      kind: Service            # db (headless), backend, frontend
+    - group: ""
+      kind: ConfigMap          # tasktracker-config, tasktracker-frontend-nginx
+    - group: ""
+      kind: ServiceAccount     # tasktracker (token not mounted)
+    - group: batch
+      kind: Job                # PostSync smoke-test hook (Task 5)
