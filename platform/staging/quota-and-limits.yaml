@@ -1,0 +1,66 @@
+# =============================================================================
+# File        : platform/staging/quota-and-limits.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 1.5.3, 4.3.2 (reused from Assignment 2)
+# Purpose     : Namespace budget (ResourceQuota) and per-container defaults
+#               (LimitRange) for dso202-staging. Delivered by Application
+#               platform-staging (project platform); the chart is NOT allowed to
+#               render these kinds (C8), so a chart commit cannot change its
+#               own budget.
+#               Change from A2: LimitRange "min" lowered to 10m / 16Mi so the
+#               PostSync smoke-test Job (requests 10m / 16Mi) is admitted.
+# =============================================================================
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dso202-quota
+  namespace: dso202-staging
+  labels:
+    dso202/assignment: "04"
+    dso202/environment: staging
+spec:
+  hard:
+    # Max Pods at once: 3 tiers + rolling-update surge + smoke-test Job.
+    pods: "10"
+    # Total CPU / memory across all containers in the namespace.
+    requests.cpu: "1"
+    limits.cpu: "2"
+    requests.memory: 1Gi
+    limits.memory: 2Gi
+    # Storage: the database StatefulSet creates 1 PVC.
+    persistentvolumeclaims: "6"
+    requests.storage: 10Gi
+
+---
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: dso202-limits
+  namespace: dso202-staging
+  labels:
+    dso202/assignment: "04"
+    dso202/environment: staging
+spec:
+  limits:
+    # Safety net for any container that does not declare its own resources.
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      min:
+        cpu: 10m          # A2 had 50m - lowered for the smoke-test Job
+        memory: 16Mi      # A2 had 64Mi - lowered for the smoke-test Job
+      max:
+        cpu: 500m
+        memory: 512Mi
+    # Each PVC must be between 100Mi and 5Gi.
+    - type: PersistentVolumeClaim
+      min:
+        storage: 100Mi
+      max:
+        storage: 5Gi
