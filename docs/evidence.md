@@ -1049,7 +1049,8 @@ Health Status:  Healthy
 ```
 **Observation:**
 - **Nothing in the cluster changed.** The two sources render exactly the same manifests as the old single source, so the resources stayed `Synced` and `Healthy`. Only the way Argo CD fetches the chart and the values changed.
-- **The resource tree is unchanged** (second screenshot): Deployments, StatefulSet, ReplicaSets, Pods and the PostSync Job are all healthy.
+- **The UI confirms the second source.** In the resource tree (second screenshot, taken after PR #8 and the report commit `f9277c1`), the sync status reads `Synced to main ... and (1) more`: the "(1) more" is the `values` source.
+- **The resource tree is unchanged:** Deployments, StatefulSet, ReplicaSets, Pods and the PostSync Job are all healthy, with the same Pod names as before. The last sync operation is still the one from 22:00:32. Switching to two sources produced identical manifests, so Argo CD had nothing to apply.
 
 In the new version of `argocd/applications/tasktracker-dev.yaml`, `source:` is replaced by two `sources:`:
 ```yaml
