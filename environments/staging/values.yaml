@@ -19,7 +19,7 @@ existingSecret: tasktracker-credentials
 frontend:
   replicaCount: 1
   image:
-    tag: "1.0"
+    tag: "1.1"
   service:
     type: NodePort
     nodePort: 30081          # C10: not mapped by kind -> use kubectl port-forward 8082
