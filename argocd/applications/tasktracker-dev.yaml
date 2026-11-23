@@ -1,0 +1,44 @@
+# =============================================================================
+# File        : argocd/applications/tasktracker-dev.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.3.1, 4.3.2, 4.3.3, 3.2 (Listing 14)
+# Purpose     : Task Tracker in DEV. Follows branch main (moves with every
+#               merge) with automated sync, prune and self-heal: fast feedback.
+#               Project dso202 (least privilege). Sync wave 0: after the
+#               platform layer (-1) has created the namespace and the Secret.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tasktracker-dev
+  namespace: argocd
+  labels:
+    dso202/environment: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: dso202
+  source:
+    repoURL: https://github.com/Rynorbu/dso202-gitops_A4.git
+    targetRevision: main
+    path: charts/tasktracker
+    helm:
+      releaseName: tasktracker
+      # Relative to the chart directory (charts/tasktracker), hence ../../
+      valueFiles:
+        - ../../environments/dev/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dso202-dev
+  syncPolicy:
+    automated:
+      prune: true            # objects removed from the chart are deleted
+      selfHeal: true         # manual changes in the cluster are reverted
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
