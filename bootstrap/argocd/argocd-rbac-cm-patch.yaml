@@ -18,4 +18,4 @@ data:
   policy.csv: |
     p, reviewer, applications, get, dso202/*, allow
     p, reviewer, projects, get, dso202, allow
-    # p, reviewer, logs, get, dso202/*, allow
+    p, reviewer, logs, get, dso202/*, allow
