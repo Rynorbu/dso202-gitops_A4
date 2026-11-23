@@ -50,7 +50,7 @@ Laptop (Docker Desktop)
     ├── argocd          Argo CD v3.5.6 (7 Pods), polls github.com/Rynorbu/dso202-gitops_A4 every 60 s
     ├── sealed-secrets  Sealed Secrets controller 0.40.0 (1 Pod), holds the sealing key
     ├── dso202-dev      Task Tracker  <- branch main, automated sync  -> http://localhost:30080
-    └── dso202-staging  Task Tracker  <- tag v1.x.y, manual sync      -> kubectl port-forward 8081
+    └── dso202-staging  Task Tracker  <- tag v1.x.y, manual sync      -> kubectl port-forward 8082
 ```
 
 ### What is applied by hand and what comes from Git
@@ -76,7 +76,7 @@ The root Application waits for each wave to be **Healthy** before the next, than
 | Revision | branch `main` (moves) | tag `v1.0.0` -> `v1.1.0` -> `v1.2.0` (never moves) |
 | Sync | automated, prune, self-heal | manual |
 | Values | `environments/dev/values.yaml` | `environments/staging/values.yaml` |
-| Frontend | NodePort 30080 -> http://localhost:30080 | NodePort 30081 (not mapped) -> port-forward 8081 |
+| Frontend | NodePort 30080 -> http://localhost:30080 | NodePort 30081 (not mapped) -> port-forward 8082 |
 | Credentials | SealedSecret in `platform/dev/` | separate SealedSecret in `platform/staging/` |
 | Role | fast feedback | release gate |
 
@@ -139,7 +139,7 @@ The Assignment 3 chart was adjusted so Argo CD can deliver it safely.
 | C10 | Frontend NodePort, port is a value | `frontend-service.yaml`, env values | 30080 dev, 30081 staging |
 | C11 | `helm lint` clean, `helm template` works for both envs | whole chart | see evidence Task 1 |
 
-Other changes from A3: the database is now a **StatefulSet** with `volumeClaimTemplates` (as in A2), so the chart renders no PersistentVolumeClaim and the `dso202` whitelist matches the chart exactly. A **ServiceAccount** without a mounted token is used by all Pods. `fullnameOverride: tasktracker` gives fixed Service names (`tasktracker-backend`, ...). The Helm test Pod and `NOTES.txt` were removed (Argo CD does not use them; the PostSync smoke test replaces the test). A second ConfigMap, `tasktracker-frontend-nginx`, is mounted over the image's `nginx.conf` and proxies `/api/` to `tasktracker-backend:8080`. The browser only ever calls the frontend's own URL (`frontend.backendUrl`: `http://localhost:30080` in dev, `http://localhost:8081` in staging), so no hosts-file entry or extra port-forward is needed.
+Other changes from A3: the database is now a **StatefulSet** with `volumeClaimTemplates` (as in A2), so the chart renders no PersistentVolumeClaim and the `dso202` whitelist matches the chart exactly. A **ServiceAccount** without a mounted token is used by all Pods. `fullnameOverride: tasktracker` gives fixed Service names (`tasktracker-backend`, ...). The Helm test Pod and `NOTES.txt` were removed (Argo CD does not use them; the PostSync smoke test replaces the test). A second ConfigMap, `tasktracker-frontend-nginx`, is mounted over the image's `nginx.conf` and proxies `/api/` to `tasktracker-backend:8080`. The browser only ever calls the frontend's own URL (`frontend.backendUrl`: `http://localhost:30080` in dev, `http://localhost:8082` in staging), so no hosts-file entry or extra port-forward is needed.
 
 ## 6. Build the whole environment from an empty machine
 
@@ -174,8 +174,8 @@ argocd app sync tasktracker-staging
 
 # 7. Use the app
 #    dev:     http://localhost:30080
-#    staging: kubectl port-forward -n dso202-staging svc/tasktracker-frontend 8081:8080
-#             then http://localhost:8081
+#    staging: kubectl port-forward -n dso202-staging svc/tasktracker-frontend 8082:8080
+#             then http://localhost:8082
 ```
 
 ## 7. Cleanup
@@ -273,6 +273,7 @@ Rebuild time in my test: [__ minutes from `kind create cluster` to a working dev
 | Kustomize patch "no matches for argocd-cm.argocd" | upstream `install.yaml` ConfigMaps have no namespace | removed `namespace:` from both patches; the Kustomization adds it |
 | Chart rendered Secret, ResourceQuota, LimitRange, PVC | A3 chart design | deleted those templates; DB -> StatefulSet; platform layer owns quota/RBAC |
 | Browser could not reach the API (`tasktracker-backend` does not resolve outside the cluster; `localhost:8080` is used by the Argo CD port-forward) | A1-A3 had the browser call the backend directly | added `frontend-nginx-configmap.yaml`: nginx proxies `/api/` to the backend Service; `frontend.backendUrl` is the frontend's own URL per environment |
+| Port 8081 (planned for the staging port-forward) was already used by another project on my machine | local port clash | moved staging to `localhost:8082`: changed `backendUrl` and `corsOrigin` in `environments/staging/values.yaml` (a values-only change), committed, and re-synced staging. NodePort 30081 is unchanged |
 | Smoke-test Job below LimitRange minimum | A2 LimitRange min 50m / 64Mi | lowered min to 10m / 16Mi in `platform/<env>/quota-and-limits.yaml` |
 | [add your own] | | |
 
