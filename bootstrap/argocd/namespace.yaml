@@ -1,0 +1,15 @@
+# =============================================================================
+# File        : bootstrap/argocd/namespace.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.2.1 (Listing 2)
+# Purpose     : Namespace for Argo CD. The upstream install.yaml does not
+#               create it, so it is part of the bootstrap Kustomization.
+# Applied by  : hand, once per cluster (kubectl apply -k bootstrap/argocd ...)
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    dso202/assignment: "04"
+    dso202/managed-by: bootstrap

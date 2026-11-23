@@ -1,0 +1,43 @@
+# =============================================================================
+# File        : bootstrap/argocd/argocd-cm-patch.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.2.1, 4.3.1, 4.4.2 (Listing 4)
+# Purpose     : Local settings merged into the upstream argocd-cm ConfigMap:
+#               1. poll Git every 60 s (the kind cluster cannot receive webhooks)
+#               2. a local, read-only "reviewer" account (Task 6)
+#               3. a health check for Application objects so the root app can
+#                  wait for each child to be Healthy before the next sync wave
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  # no namespace here: upstream install.yaml has none on this ConfigMap, so the
+  # patch must match it without one; the Kustomization "namespace:" adds it after.
+data:
+  # (1) Polling. Default is 3 minutes; GitHub cannot reach a laptop cluster,
+  # so polling is the only trigger. Jitter spreads the requests.
+  timeout.reconciliation: 60s
+  timeout.reconciliation.jitter: 10s
+
+  # (2) Local account "reviewer". Capability "login" only (UI / CLI sign-in);
+  # "apiKey" is NOT granted, so no long-lived tokens can be generated.
+  # What it may do is defined in argocd-rbac-cm (argocd-rbac-cm-patch.yaml).
+  accounts.reviewer: login
+
+  # (3) Health of a child Application = the health it reports itself.
+  # Argo CD removed this built-in check in v1.8; without it every child is
+  # "Healthy" immediately and sync waves of the app-of-apps would not wait.
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil then
+      if obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+    end
+    return hs

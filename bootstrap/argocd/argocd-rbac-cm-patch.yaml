@@ -1,0 +1,21 @@
+# =============================================================================
+# File        : bootstrap/argocd/argocd-rbac-cm-patch.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.4.2 (Listing 5)
+# Purpose     : ARGO CD RBAC (not Kubernetes RBAC). Defines what the local
+#               "reviewer" account may do through the Argo CD UI / CLI / API.
+#               Format: p, <subject>, <resource>, <action>, <project>/<object>, allow|deny
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  # no namespace here: upstream install.yaml has none on this ConfigMap, so the
+  # patch must match it without one; the Kustomization "namespace:" adds it after.
+data:
+  # Empty default role: an account with no matching rule can do nothing.
+  policy.default: ""
+  policy.csv: |
+    p, reviewer, applications, get, dso202/*, allow
+    p, reviewer, projects, get, dso202, allow
+    # p, reviewer, logs, get, dso202/*, allow

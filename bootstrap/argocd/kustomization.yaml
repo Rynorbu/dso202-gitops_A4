@@ -1,0 +1,28 @@
+# =============================================================================
+# File        : bootstrap/argocd/kustomization.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.1.2, 4.2.1, 3.1.4 (Listing 3)
+# Purpose     : Installs Argo CD declaratively: the upstream manifest pinned
+#               to tag v3.5.6 plus two local patches. This is the only part of
+#               the platform that is applied by hand (Argo CD cannot install
+#               itself before it exists).
+# Apply with  : kubectl apply -k bootstrap/argocd --server-side --force-conflicts
+#               (server-side apply is required: the ApplicationSet CRD is larger
+#               than the 262144-byte limit of the client-side apply annotation)
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Every namespaced object from install.yaml goes into "argocd".
+namespace: argocd
+
+resources:
+  - namespace.yaml
+  # Pinned to the release TAG v3.5.6. "stable" or "master" would move under us
+  # and break the "versioned and immutable" GitOps principle.
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.6/manifests/install.yaml
+
+# Strategic-merge patches: add local settings to the upstream ConfigMaps.
+patches:
+  - path: argocd-cm-patch.yaml
+  - path: argocd-rbac-cm-patch.yaml
