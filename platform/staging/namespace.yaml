@@ -1,0 +1,18 @@
+# =============================================================================
+# File        : platform/staging/namespace.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 1.5.1, 4.3.2 (derived from Listing 11)
+# Purpose     : The dso202-staging namespace, delivered by platform-staging.
+#               Prune=false: removing this file from Git never deletes the
+#               namespace and the data in it.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dso202-staging
+  labels:
+    dso202/assignment: "04"
+    dso202/environment: staging
+    dso202/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false

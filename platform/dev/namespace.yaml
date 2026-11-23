@@ -1,0 +1,19 @@
+# =============================================================================
+# File        : platform/dev/namespace.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 1.5.1, 4.3.2 (Listing 11)
+# Purpose     : The dso202-dev namespace, delivered by platform-dev.
+#               Prune=false: if this file is ever removed from Git, Argo CD will
+#               NOT delete the namespace (which would delete everything in it,
+#               including the database volume). Explained in Task 8 Drill 3.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dso202-dev
+  labels:
+    dso202/assignment: "04"
+    dso202/environment: dev
+    dso202/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
