@@ -1,0 +1,41 @@
+# =============================================================================
+# File        : bootstrap/root/root-app.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.3.1 (Listing 7, app of apps)
+# Purpose     : The root Application. It watches the argocd/ directory of this
+#               repo on branch main and creates every other AppProject and
+#               Application from it (app-of-apps). After this file is applied
+#               nothing in Argo CD is created by hand.
+# Apply with  : kubectl apply -f bootstrap/root
+# WARNING     : Never delete this Application casually. The finalizer below
+#               cascades: deleting root deletes every child Application and
+#               every workload they manage.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Rynorbu/dso202-gitops_A4.git
+    targetRevision: main
+    path: argocd
+    directory:
+      recurse: true          # include argocd/projects and argocd/applications
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true            # a file removed from argocd/ removes the object
+      selfHeal: true         # a manual change to a child Application is reverted
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

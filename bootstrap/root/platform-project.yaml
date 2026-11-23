@@ -1,0 +1,40 @@
+# =============================================================================
+# File        : bootstrap/root/platform-project.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.4.1 (Listing 6)
+# Purpose     : AppProject "platform" - the ADMINISTRATOR layer. Used only by
+#               root, sealed-secrets, platform-dev and platform-staging. It may
+#               create any kind (Namespaces, quotas, RBAC, CRDs) and is the
+#               ONLY project allowed to deploy into the argocd namespace.
+#               Applied by hand during bootstrap, so no Git commit can change
+#               the permissions of the project that manages Git delivery.
+# Apply with  : kubectl apply -f bootstrap/root
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: Platform layer - administrator level, applied by hand during bootstrap
+
+  # Where manifests may come from: this repo and the Sealed Secrets Helm repo.
+  sourceRepos:
+    - https://github.com/Rynorbu/dso202-gitops_A4.git
+    - https://bitnami.github.io/sealed-secrets
+
+  # Where they may be deployed (this cluster only).
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: sealed-secrets
+    - server: https://kubernetes.default.svc
+      namespace: dso202-dev
+    - server: https://kubernetes.default.svc
+      namespace: dso202-staging
+
+  # All cluster-scoped kinds (Namespace, CRD, ClusterRole...) are allowed here.
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
