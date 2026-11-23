@@ -1,0 +1,26 @@
+# =============================================================================
+# File        : .gitignore
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 1.5.1, 4.2.2 (Listing 1)
+# Purpose     : Keep key material and plaintext Secrets out of the repository.
+#               Git history is permanent: a value committed once stays readable
+#               in history even after the file is deleted, so these patterns
+#               must exist BEFORE any secret file is created (first commit).
+#               This file is a safety net only - the real protection is that
+#               credentials only ever enter Git as SealedSecrets.
+# =============================================================================
+
+# Private keys of any kind
+*.key
+
+# Sealed Secrets controller key backups (kept in ~/dso202-keys, never here)
+*sealing-key*
+*.backup.yaml
+
+# Plaintext credential inputs used once by kubeseal, then deleted
+secrets-plain/
+*-plain.yaml
+
+# Logs and OS noise
+*.log
+.DS_Store
