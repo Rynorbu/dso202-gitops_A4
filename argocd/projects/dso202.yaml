@@ -51,3 +51,14 @@ spec:
       kind: ServiceAccount     # tasktracker (token not mounted)
     - group: batch
       kind: Job                # PostSync smoke-test hook (Task 5)
+
+    # Child objects that Kubernetes creates FROM the kinds above. Git never
+    # contains them, but Argo CD filters the resource tree through this
+    # whitelist: without these, Pods are hidden in the UI ("no pod groups")
+    # and `argocd app logs` has nothing to read (found during Task 6).
+    - group: apps
+      kind: ReplicaSet         # owned by each Deployment
+    - group: apps
+      kind: ControllerRevision # owned by the StatefulSet
+    - group: ""
+      kind: Pod                # owned by ReplicaSet / StatefulSet / Job
