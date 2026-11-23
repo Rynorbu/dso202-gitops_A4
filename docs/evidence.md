@@ -293,12 +293,15 @@ PASTE: kubectl apply -k ... and can-i get logs  -> yes
 ### 7.1 Pull requests
 | PR | Title | Purpose |
 |---|---|---|
-| #1 | | frontend 1.1 |
-| #2 | | promote staging to v1.1.0 |
-| #3 | | backend 1.1 (faulty) |
-| #4 | | revert backend 1.1 |
-| #5 | | backend 1.1 + required setting |
-| #6 | | promote staging to v1.2.0 |
+| #1 | release: frontend 1.1 | intended as frontend 1.1, but the commit only carried the staging port change 8081 → 8082; the image tag was not changed (see note) |
+| #2 | release: frontend 1.1 | frontend 1.1: `frontend.image.tag` "1.0" → "1.1" in dev and staging (tagged `v1.1.0`) |
+| #3 | promote: staging to v1.1.0 | promote staging: `targetRevision` v1.0.0 → v1.1.0 |
+| #4 | release: backend 1.1 | backend 1.1 (faulty), merge commit `88826dd` |
+| #5 | | revert backend 1.1 |
+| #6 | | backend 1.1 + required setting |
+| #7 | | promote staging to v1.2.0 |
+
+**Note on PR #1:** after the merge, dev was still running `rynorbu11/dso202-frontend:1.0` (checked with `kubectl get deploy ... -o jsonpath`). The diff showed the tag edit had been left out. PR #2 made the actual tag change. This shows why the `git diff` should be checked before opening a PR: in GitOps the merged diff *is* the deployment.
 
 ![Pull request list](screenshots/task7-prs.png)
 
@@ -318,7 +321,7 @@ PASTE: argocd app get tasktracker-staging  (OutOfSync, not deployed)
 
 ![task7-degraded-cli](screenshots/task7-degraded-cli.png)
 
-Bad commit: `_______`
+Bad commit: `88826dd` (Merge pull request #4 from Rynorbu/release/backend-1.1)
 ```text
 PASTE: kubectl get pods -n dso202-dev -w   (new Pod CrashLoopBackOff, old Pod still Running)
 PASTE: argocd app get tasktracker-dev      (Synced + Degraded)
@@ -345,8 +348,10 @@ Required by the image (exact log line): `PASTE`
 ![task7-rollback-refused](screenshots/task7-rollback-refused.png)
 
 ```text
-PASTE: argocd app rollback tasktracker-dev
+$ argocd app rollback tasktracker-dev
+{"level":"fatal","msg":"rpc error: code = FailedPrecondition desc = rollback cannot be initiated when auto-sync is enabled","time":"2026-11-23T20:26:56+06:00"}
 ```
+**Why it is refused:** `tasktracker-dev` has automated sync, so Git (`main`) is the source of truth. A rollback in Argo CD would deploy an older revision while `main` still points at the bad commit `88826dd`, and auto-sync would put the bad version straight back. The fix has to go through Git: `git revert` (7.6) creates a new commit that undoes the change, and Argo CD syncs it like any other commit.
 
 ### 7.6 Recovery by git revert, fix forward, promotion
 
