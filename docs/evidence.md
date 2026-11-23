@@ -17,10 +17,26 @@ Purpose     : Command output and screenshots proving each task, one section
 | Repository | https://github.com/Rynorbu/dso202-gitops_A4 |
 | Tags | `v1.0.0`, `v1.1.0`, `v1.2.0` |
 | Commit before the rebuild (Task 9) | `f4e2a97ee6077949ee1da522a8529e2225b62b61` |
-| Commits on `main` | 34 small commits, `.gitignore` first |
+| Final commit of the work | `9fc57fd` (PR #9) |
+| Commits on `main` | 38 (29 work commits and 9 pull-request merges), `.gitignore` first |
 | Environment | Windows 11, WSL Ubuntu, Docker Desktop, kind cluster `dso202-gitops` |
 
-All terminal output below was taken from the screenshots in `docs/screenshots/`. Long outputs are shortened with `...`.
+All terminal output below was taken from the screenshots in `docs/screenshots/`, which has one folder per task (`task1/` to `task10/`). Long outputs are shortened with `...`.
+
+## Contents
+
+| Task | Topic | Screenshots |
+|---|---|---|
+| [Task 1](#task-1---repository-chart-contract-and-cluster) | Repository, chart contract and cluster | [`task1/`](screenshots/task1) |
+| [Task 2](#task-2---install-argo-cd-declaratively) | Install Argo CD declaratively | [`task2/`](screenshots/task2) |
+| [Task 3](#task-3---appprojects-and-the-root-application) | AppProjects and the root Application | [`task3/`](screenshots/task3) |
+| [Task 4](#task-4---platform-layer-and-sealed-secrets) | Platform layer and Sealed Secrets | [`task4/`](screenshots/task4) |
+| [Task 5](#task-5---deliver-workloads-to-dev-and-staging) | Deliver workloads to dev and staging | [`task5/`](screenshots/task5) |
+| [Task 6](#task-6---access-control-for-argo-cd-users) | Access control for Argo CD users | [`task6/`](screenshots/task6) |
+| [Task 7](#task-7---a-release-a-faulty-release-and-recovery) | A release, a faulty release and recovery | [`task7/`](screenshots/task7) |
+| [Task 8](#task-8---drift-pruning-and-project-guardrails) | Drift, pruning and project guardrails | [`task8/`](screenshots/task8) |
+| [Task 9](#task-9---rebuild-from-git) | Rebuild from Git | [`task9/`](screenshots/task9) |
+| [Task 10](#task-10---bonus-chart-and-values-from-separate-sources) | Bonus: chart and values from separate sources | [`task10/`](screenshots/task10) |
 
 ---
 
@@ -28,7 +44,7 @@ All terminal output below was taken from the screenshots in `docs/screenshots/`.
 
 ### 1.1 Tool check
 
-![Tool versions](screenshots/task1-tools.png)
+![Tool versions](screenshots/task1/task1-tools.png)
 
 ```text
 $ kind version; kubectl version --client; helm version --short
@@ -79,7 +95,7 @@ The two ConfigMaps are the application settings (`tasktracker-config`) and the f
 
 ### 1.5 Cluster
 
-![Cluster nodes and port mapping](screenshots/task1-nodes.png)
+![Cluster nodes and port mapping](screenshots/task1/task1-nodes.png)
 
 ```text
 $ kubectl config current-context
@@ -142,7 +158,7 @@ deployment.apps/argocd-server condition met
 
 ### 2.3 Pods and CRDs
 
-![Argo CD Pods and CRDs](screenshots/task2-argocd-pods.png)
+![Argo CD Pods and CRDs](screenshots/task2/task2-argocd-pods.png)
 
 ```text
 $ kubectl get pods -n argocd
@@ -178,9 +194,9 @@ Forwarding from [::1]:8080 -> 8080
 Handling connection for 8080
 ```
 
-![Port-forward to the Argo CD server](screenshots/task2-port-forward.png)
+![Port-forward to the Argo CD server](screenshots/task2/task2-port-forward.png)
 
-![Argo CD UI after admin sign-in (REQUIRED)](screenshots/task2-argocd-ui.png)
+![Argo CD UI after admin sign-in (REQUIRED)](screenshots/task2/task2-argocd-ui.png)
 
 **Observation:** my `argocd-cm` patch is live. Argo CD polls Git every 60 s with up to 10 s of jitter, and the local account `reviewer` exists with the `login` capability only (used in Task 6). The UI sidebar shows server version **v3.5.6**, the same as the CLI. "No applications available" is correct at this point, because nothing has been handed to Argo CD yet.
 
@@ -211,11 +227,11 @@ The kinds rendered by the chart (1.4) compared with `namespaceResourceWhitelist`
 
 ### 3.2 Projects and root
 
-![AppProjects in the UI](screenshots/task3-projects.png)
+![AppProjects in the UI](screenshots/task3/task3-projects.png)
 
-![root Application tile](screenshots/task3-root-app.png)
+![root Application tile](screenshots/task3/task3-root-app.png)
 
-![root Application resource tree (REQUIRED)](screenshots/task3-root-tree.png)
+![root Application resource tree (REQUIRED)](screenshots/task3/task3-root-tree.png)
 
 | Item | Value shown |
 |---|---|
@@ -233,7 +249,7 @@ The kinds rendered by the chart (1.4) compared with `namespaceResourceWhitelist`
 
 ### 4.1 Controller installed through Git
 
-![Sealed Secrets chart versions](screenshots/task4-helm-chart-versions.png)
+![Sealed Secrets chart versions](screenshots/task4/task4-helm-chart-versions.png)
 
 ```text
 $ helm search repo sealed-secrets/sealed-secrets --versions | head -5
@@ -244,7 +260,7 @@ sealed-secrets/sealed-secrets   2.20.0          0.40.0
 sealed-secrets/sealed-secrets   2.19.3          0.39.1
 ```
 
-![Sealed Secrets application, Pod and CRD](screenshots/task4-sealed-secrets-cli.png)
+![Sealed Secrets application, Pod and CRD](screenshots/task4/task4-sealed-secrets-cli.png)
 
 ```text
 $ kubectl get applications -n argocd
@@ -261,13 +277,13 @@ NAME                        CREATED AT
 sealedsecrets.bitnami.com   2026-11-23T09:18:17Z
 ```
 
-![root tree with sealed-secrets](screenshots/task4-sealed-secrets-tree.png)
+![root tree with sealed-secrets](screenshots/task4/task4-sealed-secrets-tree.png)
 
 **Observation:** chart **2.20.0** was chosen on purpose because it installs controller **0.40.0**, the same version as my `kubeseal` CLI. The newer 2.21/2.22 charts ship controller 0.41.2. The controller was installed by root as a child Application (wave -2, commit `12f9213`), not with `helm install`.
 
 ### 4.2 Sealing key backup (outside the repo and outside OneDrive)
 
-![Sealing key backup](screenshots/task4-key-backup.png)
+![Sealing key backup](screenshots/task4/task4-key-backup.png)
 
 ```text
 $ mkdir -p ~/dso202-keys
@@ -281,9 +297,9 @@ total 8
 
 ### 4.3 Platform delivered
 
-![root tree with platform applications](screenshots/task4-platform-apps.png)
+![root tree with platform applications](screenshots/task4/task4-platform-apps.png)
 
-![Platform applications, namespaces and SealedSecret](screenshots/task4-platform-cli.png)
+![Platform applications, namespaces and SealedSecret](screenshots/task4/task4-platform-cli.png)
 
 ```text
 $ kubectl get applications -n argocd
@@ -302,7 +318,7 @@ NAME                      STATUS   SYNCED   AGE
 tasktracker-credentials            True     21s
 ```
 
-![Decrypted Secrets - key names and sizes only](screenshots/task4-secret-describe.png)
+![Decrypted Secrets - key names and sizes only](screenshots/task4/task4-secret-describe.png)
 
 ```text
 $ kubectl describe secret tasktracker-credentials -n dso202-dev
@@ -324,7 +340,7 @@ POSTGRES_PASSWORD:  12 bytes
 POSTGRES_USER:      7 bytes
 ```
 
-![ResourceQuota and LimitRange](screenshots/task4-quota-limits.png)
+![ResourceQuota and LimitRange](screenshots/task4/task4-quota-limits.png)
 
 ```text
 $ kubectl get resourcequota,limitrange -n dso202-dev
@@ -357,7 +373,7 @@ $ git status --short --ignored
 
 ### 5.1 Tag v1.0.0
 
-![Push and tag v1.0.0](screenshots/task5-tag-v1.0.0.png)
+![Push and tag v1.0.0](screenshots/task5/task5-tag-v1.0.0.png)
 
 ```text
 $ git push origin main
@@ -372,13 +388,13 @@ To https://github.com/Rynorbu/dso202-gitops_A4.git
 
 ### 5.2 Dev: wave order and smoke test
 
-![root while tasktracker-dev starts (Synced but Progressing)](screenshots/task5-dev-progressing.png)
+![root while tasktracker-dev starts (Synced but Progressing)](screenshots/task5/task5-dev-progressing.png)
 
-![tasktracker-dev Synced + Progressing at 16:01:38](screenshots/task5-dev-progressing-app.png)
+![tasktracker-dev Synced + Progressing at 16:01:38](screenshots/task5/task5-dev-progressing-app.png)
 
 At 16:01:38 the root Application was **Synced to main (b27d784)** but **Progressing**, and `tasktracker-dev` was **Synced** but **Progressing**. This is the Synced-but-not-Healthy example used in Q3.
 
-![Pods start in wave order](screenshots/task5-wave-order.png)
+![Pods start in wave order](screenshots/task5/task5-wave-order.png)
 
 ```text
 $ kubectl get pods -n dso202-dev -w
@@ -394,7 +410,7 @@ tasktracker-smoke-test-phfgh           0/1     Pending             0s       <- P
 tasktracker-smoke-test-phfgh           0/1     ContainerCreating   1s
 ```
 
-![Smoke test passed](screenshots/task5-smoke-test.png)
+![Smoke test passed](screenshots/task5/task5-smoke-test.png)
 
 ```text
 $ kubectl get job -n dso202-dev
@@ -407,17 +423,17 @@ smoke test: GET http://tasktracker-backend:8080/api/tasks
 smoke test passed on attempt 1
 ```
 
-![tasktracker-dev Synced and Healthy](screenshots/task5-dev-tree.png)
+![tasktracker-dev Synced and Healthy](screenshots/task5/task5-dev-tree.png)
 
 **Observation:** each tier was created only after the one before it was Ready: database (wave 0, Ready at 89 s), then backend (wave 1), then frontend (wave 2), then the PostSync smoke test. The smoke test called the backend through its Service, got the three seed tasks from PostgreSQL and passed on the first attempt. The application then turned Synced + Healthy.
 
 ### 5.3 CRUD in dev (http://localhost:30080)
 
-![Create - POST /api/tasks 201 Created](screenshots/task5-crud-create.png)
+![Create - POST /api/tasks 201 Created](screenshots/task5/task5-crud-create.png)
 
-![Update - PUT /api/tasks/5 200 OK](screenshots/task5-crud-update.png)
+![Update - PUT /api/tasks/5 200 OK](screenshots/task5/task5-crud-update.png)
 
-![Delete - DELETE /api/tasks/5 204 No Content](screenshots/task5-crud-delete.png)
+![Delete - DELETE /api/tasks/5 204 No Content](screenshots/task5/task5-crud-delete.png)
 
 | Action | Request | Response |
 |---|---|---|
@@ -429,7 +445,7 @@ smoke test passed on attempt 1
 
 ### 5.4 Staging (manual sync)
 
-![Before the manual sync](screenshots/task5-staging-before-cli.png)
+![Before the manual sync](screenshots/task5/task5-staging-before-cli.png)
 
 ```text
 $ kubectl get applications -n argocd
@@ -442,9 +458,9 @@ tasktracker-dev       Synced        Healthy
 tasktracker-staging   OutOfSync     Missing
 ```
 
-![tasktracker-staging Missing before the manual sync](screenshots/task5-staging-outofsync.png)
+![tasktracker-staging Missing before the manual sync](screenshots/task5/task5-staging-outofsync.png)
 
-![After argocd app sync tasktracker-staging](screenshots/task5-staging-after-cli.png)
+![After argocd app sync tasktracker-staging](screenshots/task5/task5-staging-after-cli.png)
 
 ```text
 $ kubectl get applications -n argocd
@@ -460,7 +476,7 @@ tasktracker-db         ClusterIP   None            5432/TCP
 tasktracker-frontend   NodePort    10.96.254.112   8080:30081/TCP
 ```
 
-![All applications Synced and Healthy](screenshots/task5-all-apps.png)
+![All applications Synced and Healthy](screenshots/task5/task5-all-apps.png)
 
 **Observation:** staging was created together with dev, but because it has no `automated` block, Argo CD only reported it (`OutOfSync` / `Missing`) and deployed nothing until I ran `argocd app sync tasktracker-staging`. That manual step is the release gate. In my cluster root stayed Synced/Healthy during this time, so the gate is visible on the staging Application itself, not on root. After the sync, staging runs on NodePort 30081, which kind does not map, so it is reached with `kubectl port-forward ... 8082:8080`.
 
@@ -468,7 +484,7 @@ tasktracker-frontend   NodePort    10.96.254.112   8080:30081/TCP
 
 ## Task 6 - Access control for Argo CD users
 
-![Accounts](screenshots/task6-account-list.png)
+![Accounts](screenshots/task6/task6-account-list.png)
 
 ```text
 $ argocd account list
@@ -477,7 +493,7 @@ admin     true     login
 reviewer  true     login
 ```
 
-![Reviewer permissions](screenshots/task6-reviewer-cani.png)
+![Reviewer permissions](screenshots/task6/task6-reviewer-cani.png)
 
 ```text
 $ argocd login localhost:8080 --username reviewer --insecure --name reviewer
@@ -498,7 +514,7 @@ $ argocd --argocd-context reviewer proj get platform
 {"level":"fatal","msg":"rpc error: code = PermissionDenied desc = permission denied: projects, get, platform, sub: reviewer, ..."}
 ```
 
-![Logged-in user is reviewer](screenshots/task6-reviewer-user-info.png)
+![Logged-in user is reviewer](screenshots/task6/task6-reviewer-user-info.png)
 
 **Observation:** `reviewer` sees only the two `dso202` applications, not root, sealed-secrets or the platform apps. It can view but not sync, it cannot read logs yet, and it cannot even read the `platform` project. `policy.default: ""` means every right must be granted explicitly.
 
@@ -506,7 +522,7 @@ $ argocd --argocd-context reviewer proj get platform
 
 The line `p, reviewer, logs, get, dso202/*, allow` was enabled in `bootstrap/argocd/argocd-rbac-cm-patch.yaml`, committed (`b786c16`) and applied with `kubectl apply -k bootstrap/argocd --server-side --force-conflicts`.
 
-![can-i get logs = yes, and backend logs through Argo CD](screenshots/task6-logs-enabled.png)
+![can-i get logs = yes, and backend logs through Argo CD](screenshots/task6/task6-logs-enabled.png)
 
 ```text
 $ argocd account can-i get logs 'dso202/tasktracker-dev'
@@ -516,9 +532,9 @@ $ argocd app logs tasktracker-dev --kind Deployment --name tasktracker-backend -
 [server] listening on :8080
 ```
 
-![Reviewer reads backend Pod logs in the UI (REQUIRED)](screenshots/task6-reviewer-logs.png)
+![Reviewer reads backend Pod logs in the UI (REQUIRED)](screenshots/task6/task6-reviewer-logs.png)
 
-![Reviewer now sees the full tree down to the Pods](screenshots/task6-reviewer-tree-view.png)
+![Reviewer now sees the full tree down to the Pods](screenshots/task6/task6-reviewer-tree-view.png)
 
 **Observation:** after the commit, the reviewer can read logs in both the CLI and the UI, but still cannot sync. On the first try the CLI still answered `no`, because my edit to the patch file had not been saved, so the committed file still had the line commented out. Even with `yes`, the logs were empty and the UI said "no pod groups". The cause was the project whitelist, not RBAC (see 3.1). After commit `a6a33e0` the tree shows ReplicaSets and Pods, and the logs appear.
 
@@ -528,7 +544,9 @@ $ argocd app logs tasktracker-dev --kind Deployment --name tasktracker-backend -
 
 ### 7.1 Pull requests
 
-![All 7 pull requests, closed and merged (REQUIRED)](screenshots/task7-prs.png)
+![Pull requests #1 to #7, closed and merged (REQUIRED)](screenshots/task7/task7-prs.png)
+
+![Final list: all 9 pull requests merged](screenshots/task7/task7-prs-final.png)
 
 | PR | Title | Branch commit | Merge commit on `main` | What it changed |
 |---|---|---|---|---|
@@ -539,16 +557,18 @@ $ argocd app logs tasktracker-dev --kind Deployment --name tasktracker-backend -
 | #5 | Revert "Merge pull request #4 ..." | `294bdff` | `5426eda` | revert of `88826dd` (backend back to 1.0) |
 | #6 | release: backend 1.1 with required setting | `46be081` | `9ce6a3a` (tag **v1.2.0**) | backend 1.1 plus `extraEnv: TASK_PAGE_SIZE: "50"` |
 | #7 | promote: staging to v1.2.0 | `07e2595` | `db4dc08` | Only `docs/evidence.md`. The `targetRevision` edit was missing (see note). |
+| #8 | feat(argocd): tasktracker-dev uses separate chart and values sources | `ac36838` | `f586466` | Task 10: `tasktracker-dev` changed from one `source:` to two `sources:` |
+| #9 | promote: staging to v1.2.0 | `f601c7d` | `9fc57fd` | staging `targetRevision` v1.1.0 -> v1.2.0 (the change PR #7 was missing) |
 
 **Note on PR #1 and PR #7:** two PRs were merged without the change their title promised.
 - **PR #1:** after the merge, dev still ran `rynorbu11/dso202-frontend:1.0`. `kubectl get deploy ... -o jsonpath` showed it, and the history of `tasktracker-dev` confirmed it. PR #2 made the real tag change.
-- **PR #7:** found while writing this report. `git show --stat 07e2595` lists only `docs/evidence.md`, and the end of Task 9 shows staging still on `v1.1.0`.
+- **PR #7:** found while writing this report. `git show --stat 07e2595` lists only `docs/evidence.md`, and the end of Task 9 shows staging still on `v1.1.0`. PR #9 made the real promotion (see 7.7).
 
 In GitOps the merged diff *is* the deployment. A wrong diff deploys the wrong thing (or nothing), however good the PR title is. `git diff --stat` must be checked before every PR.
 
 ### 7.2 Frontend 1.1 in dev, staging gate
 
-![Dev history with the frontend 1.1 release](screenshots/task7-dev-history.png)
+![Dev history with the frontend 1.1 release](screenshots/task7/task7-dev-history.png)
 
 ```text
 $ argocd app get tasktracker-dev
@@ -566,9 +586,9 @@ ID  DATE                        REVISION
 2   2026-11-23 19:43:20 +0600   main (531a41d)
 ```
 
-![Dev frontend shows RELEASE 1.1](screenshots/task7-dev-header-1.1.png)
+![Dev frontend shows RELEASE 1.1](screenshots/task7/task7-dev-header-1.1.png)
 
-![Staging OutOfSync on v1.1.0, not deployed](screenshots/task7-staging-outofsync-cli.png)
+![Staging OutOfSync on v1.1.0, not deployed](screenshots/task7/task7-staging-outofsync-cli.png)
 
 ```text
 $ argocd app get tasktracker-staging
@@ -581,7 +601,7 @@ apps  Deployment  dso202-staging  tasktracker-backend   OutOfSync  Healthy
 apps  Deployment  dso202-staging  tasktracker-frontend  OutOfSync  Healthy
 ```
 
-![Staging still on the old release before the manual sync](screenshots/task7-staging-old-header.png)
+![Staging still on the old release before the manual sync](screenshots/task7/task7-staging-old-header.png)
 
 **Observation:**
 - **Dev:** picked up the merge by itself within a minute and now shows the red "RELEASE 1.1" stamp.
@@ -592,7 +612,7 @@ apps  Deployment  dso202-staging  tasktracker-frontend  OutOfSync  Healthy
 
 Bad commit: **`88826dd`** (Merge pull request #4 from Rynorbu/release/backend-1.1)
 
-![New backend Pod in CrashLoopBackOff, old Pod still Running](screenshots/task7-crashloopbackoff.png)
+![New backend Pod in CrashLoopBackOff, old Pod still Running](screenshots/task7/task7-crashloopbackoff.png)
 
 ```text
 $ kubectl get pods -n dso202-dev -w
@@ -605,7 +625,7 @@ tasktracker-backend-84c646f56c-d4wwv   0/1     Error              5 (82s ago)   
 tasktracker-backend-84c646f56c-d4wwv   0/1     CrashLoopBackOff   5 (1s ago)     5m10s
 ```
 
-![tasktracker-dev Synced but Degraded](screenshots/task7-degraded-cli.png)
+![tasktracker-dev Synced but Degraded](screenshots/task7/task7-degraded-cli.png)
 
 ```text
 $ argocd app get tasktracker-dev
@@ -615,7 +635,7 @@ Health Status:  Degraded
 apps  Deployment  dso202-dev  tasktracker-backend  Synced  Degraded  Deployment "tasktracker-backend" exceeded its progress deadline
 ```
 
-![UI: tasktracker-dev and root Degraded, staging Healthy on v1.1.0](screenshots/task7-degraded.png)
+![UI: tasktracker-dev and root Degraded, staging Healthy on v1.1.0](screenshots/task7/task7-degraded.png)
 
 - **New backend Pod state:** `tasktracker-backend-84c646f56c-d4wwv` was `0/1` and alternated between `Error` and `CrashLoopBackOff` (5 restarts in 5 minutes).
 - **Old backend Pod state:** `tasktracker-backend-5c49cdd4b4-zpcgz` stayed `1/1 Running`. The rolling update never removed it, because the new Pod never became Ready.
@@ -626,7 +646,7 @@ apps  Deployment  dso202-dev  tasktracker-backend  Synced  Degraded  Deployment 
 
 ### 7.4 Diagnosis
 
-![kubectl describe pod - Events](screenshots/task7-pod-describe.png)
+![kubectl describe pod - Events](screenshots/task7/task7-pod-describe.png)
 
 ```text
 $ kubectl describe pod tasktracker-backend-84c646f56c-d4wwv -n dso202-dev
@@ -642,7 +662,7 @@ Events:
   Warning  BackOff  41s (x18 over 8m59s) kubelet  Back-off restarting failed container backend in pod tasktracker-backend-84c646f56c-d4wwv_dso202-dev(...)
 ```
 
-![Backend 1.1 log line](screenshots/task7-backend-logs.png)
+![Backend 1.1 log line](screenshots/task7/task7-backend-logs.png)
 
 ```text
 $ kubectl logs tasktracker-backend-84c646f56c-d4wwv -n dso202-dev
@@ -654,7 +674,7 @@ Required by the image (exact log line): `FATAL: required setting TASK_PAGE_SIZE 
 
 ### 7.5 Rollback refused
 
-![argocd app rollback refused](screenshots/task7-rollback-refused.png)
+![argocd app rollback refused](screenshots/task7/task7-rollback-refused.png)
 
 ```text
 $ argocd app rollback tasktracker-dev
@@ -666,7 +686,7 @@ $ argocd app rollback tasktracker-dev
 
 **Revert (PR #5).** PR #4 had been merged with a merge commit, so the revert needs `-m 1` (keep the `main` side). The commands were `git checkout -b revert/backend-1.1` and `git revert -m 1 88826dd --no-edit`. They produced commit `294bdff Revert "Merge pull request #4 from Rynorbu/release/backend-1.1"`, which is visible in the Git graph below and was merged as PR #5 (`5426eda`).
 
-![Dev Healthy again after the revert](screenshots/task7-revert-healthy.png)
+![Dev Healthy again after the revert](screenshots/task7/task7-revert-healthy.png)
 
 ```text
 $ argocd app get tasktracker-dev
@@ -685,7 +705,7 @@ backend:
     TASK_PAGE_SIZE: "50"      # required by backend 1.1 (named in its crash log)
 ```
 
-![Dev Healthy on backend 1.1 with the setting, smoke test passed](screenshots/task7-fixforward-healthy.png)
+![Dev Healthy on backend 1.1 with the setting, smoke test passed](screenshots/task7/task7-fixforward-healthy.png)
 
 ```text
 $ argocd app get tasktracker-dev
@@ -700,7 +720,7 @@ smoke test passed on attempt 1
 ```
 `9ce6a3a` was tagged **v1.2.0**.
 
-![Dev history and Git graph](screenshots/task7-history-gitlog.png)
+![Dev history and Git graph](screenshots/task7/task7-history-gitlog.png)
 
 ```text
 $ argocd app history tasktracker-dev
@@ -727,7 +747,31 @@ $ git log --oneline --graph --decorate -n 15
 - **The bad commit has no history entry.** Its sync operation never finished, because the PostSync hook waited for health that never came. The next entry is the revert.
 - **History stayed intact.** The bad commit `88826dd` and its undo `294bdff` / `5426eda` are both on `main`, and nothing was force-pushed.
 - **Staging never ran the bad backend.** It moved only between tags (`v1.0.0` -> `v1.1.0`), and neither tag contains `88826dd`.
-- **Staging did not reach `v1.2.0`.** PR #7 did not change `targetRevision` (see 7.1), so staging stayed on `v1.1.0`.
+- **Staging did not reach `v1.2.0` at this point.** PR #7 did not change `targetRevision` (see 7.1), so staging stayed on `v1.1.0` until PR #9 (see 7.7).
+
+### 7.7 Promoting staging to v1.2.0
+
+PR #9 changed `argocd/applications/tasktracker-staging.yaml` from `targetRevision: v1.1.0` to `targetRevision: v1.2.0` (branch commit `f601c7d`, merge commit `9fc57fd`). Staging then became `OutOfSync` and was synced by hand.
+
+![Staging sync and history after promotion to v1.2.0](screenshots/task7/task7-staging-v1.2.0.png)
+
+```text
+$ argocd app sync tasktracker-staging
+apps   StatefulSet  dso202-staging  tasktracker-db          Synced     Healthy             statefulset rolling update complete
+apps   Deployment   dso202-staging  tasktracker-backend     Synced     Healthy             deployment.apps/tasktracker-backend configured
+apps   Deployment   dso202-staging  tasktracker-frontend    Synced     Healthy             deployment.apps/tasktracker-frontend unchanged
+batch  Job          dso202-staging  tasktracker-smoke-test  Succeeded  Synced   PostSync   Reached expected number of succeeded pods
+
+$ argocd app history tasktracker-staging
+SOURCE  https://github.com/Rynorbu/dso202-gitops_A4.git
+ID  DATE                        REVISION
+0   2026-11-23 22:00:47 +0600   v1.1.0 (531a41d)
+1   2026-11-23 23:28:45 +0600   v1.2.0 (9ce6a3a)
+```
+**Observation:**
+- **Only the backend changed.** `tasktracker-backend` is `configured` (image 1.0 -> 1.1 plus `TASK_PAGE_SIZE`), and every other object is `unchanged`, because `v1.1.0` already had frontend 1.1.
+- **The backend 1.1 that crashed in dev runs cleanly in staging,** because `v1.2.0` ships the image together with its required setting. The PostSync smoke test passed.
+- **Staging history has one entry per promoted tag.** Entry 0 is the manual sync after the Task 9 rebuild, and entry 1 is this promotion. Because staging has no automated sync, `argocd app rollback tasktracker-staging 0` would be allowed here, unlike in dev.
 
 ---
 
@@ -737,9 +781,9 @@ $ git log --oneline --graph --decorate -n 15
 
 - **Prediction:** the extra replicas will be removed within seconds, because `tasktracker-dev` has `selfHeal: true` and Git says 1 replica.
 
-![Scale backend to 3 in dev](screenshots/task8-drill1.png)
+![Scale backend to 3 in dev](screenshots/task8/task8-drill1.png)
 
-![Watch: 3 replicas put back to 1](screenshots/task8-drill1-live.png)
+![Watch: 3 replicas put back to 1](screenshots/task8/task8-drill1-live.png)
 
 ```text
 $ kubectl scale deployment/tasktracker-backend -n dso202-dev --replicas=3
@@ -760,7 +804,7 @@ tasktracker-backend   1/1     1            1           5h16m
 
 - **Prediction:** staging will be reported OutOfSync but will stay at 3 replicas, because it has no `automated` block and therefore no self-heal.
 
-![Staging OutOfSync with the replica diff](screenshots/task8-drill2-outofsync.png)
+![Staging OutOfSync with the replica diff](screenshots/task8/task8-drill2-outofsync.png)
 
 ```text
 $ kubectl scale deployment/tasktracker-backend -n dso202-staging --replicas=3
@@ -778,9 +822,9 @@ $ argocd app diff tasktracker-staging
 >   replicas: 1
 ```
 
-![UI: staging OutOfSync, everything else Synced](screenshots/task8-drill2-outofsync-argocd-ui.png)
+![UI: staging OutOfSync, everything else Synced](screenshots/task8/task8-drill2-outofsync-argocd-ui.png)
 
-![After the manual sync](screenshots/task8-drill2.png)
+![After the manual sync](screenshots/task8/task8-drill2.png)
 
 ```text
 $ argocd app sync tasktracker-staging
@@ -803,7 +847,7 @@ commit a223951  drill: add prune-drill ConfigMap      (platform/dev/prune-drill.
 commit 3074736  drill: remove prune-drill ConfigMap   (file deleted with git rm)
 ```
 
-![ConfigMap NotFound after the delete commit](screenshots/task8-drill3.png)
+![ConfigMap NotFound after the delete commit](screenshots/task8/task8-drill3.png)
 
 ```text
 $ kubectl get configmap prune-drill -n dso202-dev
@@ -816,7 +860,7 @@ Error from server (NotFound): configmaps "prune-drill" not found
 
 - **Prediction:** Argo CD will refuse to sync `tasktracker-dev`, because ResourceQuota is not in the `dso202` whitelist. The running application will stay Healthy.
 
-![ResourceQuota not permitted in project dso202](screenshots/task8-drill4-cli.png)
+![ResourceQuota not permitted in project dso202](screenshots/task8/task8-drill4-cli.png)
 
 ```text
 $ argocd app get tasktracker-dev        (after argocd app get tasktracker-dev --hard-refresh)
@@ -836,7 +880,7 @@ tasktracker-dev       OutOfSync     Healthy
 tasktracker-staging   Synced        Healthy
 ```
 
-![UI: drill-quota is never created](screenshots/task8-drill4.png)
+![UI: drill-quota is never created](screenshots/task8/task8-drill4.png)
 
 - **Result and explanation:** the prediction was right. The message is `resource :ResourceQuota is not permitted in project dso202`, and the object was never created ("Resource not found in cluster"). The rest of the application stayed Healthy and in place. The drill was undone with `git revert --no-edit HEAD` (`f4e2a97`).
   - **Why the first check showed nothing:** Argo CD had not polled Git yet. `--hard-refresh` made it read the new commit immediately.
@@ -848,7 +892,7 @@ tasktracker-staging   Synced        Healthy
 
 ### Before
 
-![State before the rebuild](screenshots/task9-before.png)
+![State before the rebuild](screenshots/task9/task9-before.png)
 
 ```text
 $ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml > ~/dso202-keys/sealing-key.backup.yaml
@@ -866,7 +910,7 @@ tasktracker-staging   Synced        Healthy
 
 ### Destroy and recreate
 
-![START date, kind delete, kind create](screenshots/task9-start.png)
+![START date, kind delete, kind create](screenshots/task9/task9-start.png)
 
 ```text
 $ date
@@ -881,7 +925,7 @@ Set kubectl context to "kind-dso202-gitops"
 
 ### Restore the key before the controller exists
 
-![Key restored](screenshots/task9-key-restore.png)
+![Key restored](screenshots/task9/task9-key-restore.png)
 
 ```text
 $ kubectl create namespace sealed-secrets
@@ -910,7 +954,7 @@ The wait timed out because every image had to be downloaded again into the new c
 3. **The Redis image was pulled by hand.** I pulled it with Docker Desktop. `kind load docker-image` failed on one node with `content digest ... not found`, so I deleted the Redis Pod, and it started at once on a node that already had the image.
 4. **Root started straight away.** As soon as Redis was Running, root synced and the child applications followed.
 
-![Applications becoming Healthy](screenshots/task9-apps-order.png)
+![Applications becoming Healthy](screenshots/task9/task9-apps-order.png)
 
 | Wave | Application | What I saw |
 |---|---|---|
@@ -923,7 +967,7 @@ The wait timed out because every image had to be downloaded again into the new c
 
 ### Sync staging and verify
 
-![Staging sync result](screenshots/task9-staging-sync.png)
+![Staging sync result](screenshots/task9/task9-staging-sync.png)
 
 ```text
 $ argocd app sync tasktracker-staging
@@ -937,13 +981,13 @@ Message:        successfully synced (no more tasks)
 batch  Job  dso202-staging  tasktracker-smoke-test  Succeeded  Synced  PostSync  Reached expected number of succeeded pods
 ```
 
-![Dev after the rebuild - new task created at 22:02:44](screenshots/task9-dev.png)
+![Dev after the rebuild - new task created at 22:02:44](screenshots/task9/task9-dev.png)
 
-![Staging after the rebuild on localhost:8082](screenshots/task9-staging.png)
+![Staging after the rebuild on localhost:8082](screenshots/task9/task9-staging.png)
 
-![tasktracker-dev after the rebuild, Synced to main (f4e2a97)](screenshots/task9-dev-tree.png)
+![tasktracker-dev after the rebuild, Synced to main (f4e2a97)](screenshots/task9/task9-dev-tree.png)
 
-![END: both smoke tests passed, staging target, END date](screenshots/task9-end.png)
+![END: both smoke tests passed, staging target, END date](screenshots/task9/task9-end.png)
 
 ```text
 $ kubectl logs job/tasktracker-smoke-test -n dso202-dev
@@ -983,11 +1027,31 @@ Elapsed time from `kind create cluster` to a working dev frontend: **about 27 mi
 
 ## Task 10 - Bonus: chart and values from separate sources
 
-![argocd app get tasktracker-dev](screenshots/task10-cli.png)
+![argocd app get tasktracker-dev](screenshots/task10/task10-cli.png)
 
-![tasktracker-dev resource tree](screenshots/task10-sources.png)
+![tasktracker-dev resource tree](screenshots/task10/task10-sources.png)
 
-**Status:** the change is prepared in commit `ac36838` on branch `feat/multi-source` (pushed to GitHub), but that branch has **not** been merged to `main`. `tasktracker-dev` follows `main`, so the screenshots above still show the single `Source:` block (`Synced to main (f4e2a97)`). In the new version of `argocd/applications/tasktracker-dev.yaml`, `source:` is replaced by two `sources:`:
+**Status:** done. The change was made in commit `ac36838` on branch `feat/multi-source` and merged as PR #8 (`f586466`). After a hard refresh, `argocd app get tasktracker-dev` shows a `Sources:` section with two entries, and the application is still `Synced to main` and `Healthy`:
+
+```text
+$ argocd app get tasktracker-dev --hard-refresh
+Sources:
+- Repo:         https://github.com/Rynorbu/dso202-gitops_A4.git
+  Target:       main
+  Path:         charts/tasktracker
+  Helm Values:  $values/environments/dev/values.yaml
+- Repo:         https://github.com/Rynorbu/dso202-gitops_A4.git
+  Target:       main
+  Ref:          values
+Sync Policy:    Automated (Prune)
+Sync Status:    Synced to main
+Health Status:  Healthy
+```
+**Observation:**
+- **Nothing in the cluster changed.** The two sources render exactly the same manifests as the old single source, so the resources stayed `Synced` and `Healthy`. Only the way Argo CD fetches the chart and the values changed.
+- **The resource tree is unchanged** (second screenshot): Deployments, StatefulSet, ReplicaSets, Pods and the PostSync Job are all healthy.
+
+In the new version of `argocd/applications/tasktracker-dev.yaml`, `source:` is replaced by two `sources:`:
 ```yaml
   sources:
     - repoURL: https://github.com/Rynorbu/dso202-gitops_A4.git   # 1. the chart
