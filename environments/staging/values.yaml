@@ -22,14 +22,14 @@ frontend:
     tag: "1.0"
   service:
     type: NodePort
-    nodePort: 30081          # C10: not mapped by kind -> use kubectl port-forward 8081
-  backendUrl: "http://localhost:8081"    # browser calls the frontend; nginx proxies /api/
+    nodePort: 30081          # C10: not mapped by kind -> use kubectl port-forward 8082
+  backendUrl: "http://localhost:8082"    # browser calls the frontend; nginx proxies /api/
 
 backend:
   replicaCount: 1
   image:
     tag: "1.0"
-  corsOrigin: "http://localhost:8081"
+  corsOrigin: "http://localhost:8082"
 
 database:
   image:

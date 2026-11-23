@@ -9,7 +9,7 @@
 # Why         : The browser cannot resolve the in-cluster name
 #               tasktracker-backend, and localhost:8080 is taken by the Argo CD
 #               port-forward. With this proxy the browser only talks to the
-#               frontend's own address (localhost:30080 in dev, localhost:8081
+#               frontend's own address (localhost:30080 in dev, localhost:8082
 #               in staging) and nginx forwards /api/ to the backend.
 # =============================================================================
 {{- if .Values.frontend.apiProxy.enabled }}
