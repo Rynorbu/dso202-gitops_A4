@@ -1,0 +1,42 @@
+# =============================================================================
+# File        : argocd/applications/platform-staging.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.3.1, 4.3.2 (derived from Listing 10)
+# Purpose     : Platform layer for staging: namespace, quota, limits, RBAC and
+#               the staging SealedSecret from platform/staging. The platform
+#               layer follows main with automated sync in BOTH environments;
+#               only the workloads (tasktracker-staging) are gated by a tag.
+#               Sync wave -1.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-staging
+  namespace: argocd
+  labels:
+    dso202/environment: staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Rynorbu/dso202-gitops_A4.git
+    targetRevision: main
+    path: platform/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dso202-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,45 @@
+# =============================================================================
+# File        : argocd/applications/platform-dev.yaml
+# Assignment  : DSO202 Assignment 4 - GitOps delivery with Argo CD
+# Descriptor  : 4.3.1, 4.3.2 (Listing 10)
+# Purpose     : Platform layer for dev: namespace, quota, limits, RBAC and the
+#               SealedSecret, as plain manifests from platform/dev (no chart).
+#               Project "platform" because the workload project dso202 is
+#               not allowed to create these kinds.
+#               Sync wave -1: after the Sealed Secrets controller (-2), before
+#               the workloads (0) that need the namespace, quota and Secret.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-dev
+  namespace: argocd
+  labels:
+    dso202/environment: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Rynorbu/dso202-gitops_A4.git
+    targetRevision: main
+    path: platform/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dso202-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # The SealedSecret CRD may not be known at dry-run time on a fresh
+      # cluster; skip the dry run for kinds whose CRD is missing.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
